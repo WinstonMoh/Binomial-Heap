@@ -35,15 +35,17 @@ struct heap *make_binomial_heap() {
 }
 
 /**
- * @brief level_order
+ * @brief in_order
  * This procedure prints nodes in a binomial tree.
  * @param root the root of the binomial tree.
  */
-void level_order(struct node *root)
+void in_order(struct node *root)
 {
-    if (root != nullptr) {
+    while (root != nullptr) {
         cout<<root->key<<" ";
-        level_order(root->child);
+        in_order(root->child);
+        if (root->parent == nullptr)
+            cout<<"\n";
         root = root->sibling;
     }
 }
@@ -54,12 +56,7 @@ void level_order(struct node *root)
  * @param h the binomial heap.
  */
 void print_binomial_heap(struct heap* h) {
-    struct node *curr = h->head;
-    while (curr != nullptr) {
-        level_order(curr);
-        cout<<"\n";
-        curr = curr->sibling;
-    }
+    in_order(h->head);   // call lev
 }
 
 /**
@@ -225,20 +222,31 @@ void binomial_heap_insert(struct heap* &h, struct node* x) {
  */
 struct node *binomial_heap_extract_min(struct heap* &h) {
     // Find root x with minimum key in root list of h.
-    int minimum = numeric_limits<int>::max();
     struct node *curr = h->head;
-    struct node *x = nullptr;
+    struct node *x = binomial_heap_minimum(h);
+    // Remove x from root list of h.
+    curr = h->head;
+    struct node *prev = nullptr;
     while (curr != nullptr) {
-        if (curr->key < minimum) {
-            minimum = curr->key;
-            x = curr;
+        if (curr->sibling == x) {   // find x's previous node.
+            prev = curr;
         }
         curr = curr->sibling;
     }
-    // Remove x from root list of H.
+    prev->sibling = x->sibling;
 
     struct heap *hp = make_binomial_heap();
-
+    // Reverse list of x's children.
+    struct node *child = x->child;
+    struct node *pr = nullptr, *nxt = nullptr;
+    while (child != nullptr) {
+        nxt = child->sibling;   // store next
+        child->sibling = pr;    // reverse current node's pointer.
+        // Move pointers one position ahead.
+        pr = child;
+        child = nxt;
+    }
+    hp->head = pr;  // Set hp->head to point to head of resulting list.
 
     h = binomial_heap_union(h, hp);
     return x;
