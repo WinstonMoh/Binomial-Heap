@@ -22,17 +22,6 @@ struct node *Node(int value)
     return temp;
 }
 
-/** A utility function to do level_order traversal of a bonimial tree. */
-void level_order(struct node *root)
-{
-    if (root != nullptr)
-    {
-        printf("%d ", root->key);
-        level_order(root->child);
-        level_order(root->sibling);
-    }
-}
-
 /** Structure of a binomial heap. */
 struct heap {
     struct node *head;
@@ -45,9 +34,42 @@ struct heap *make_binomial_heap() {
     return h; // return an empty heap.
 }
 
-/** Find minimum node in Binomial Heap and return it. */
+/**
+ * @brief level_order
+ * This procedure prints nodes in a binomial tree.
+ * @param root the root of the binomial tree.
+ */
+void level_order(struct node *root)
+{
+    if (root != nullptr) {
+        cout<<root->key<<" ";
+        level_order(root->child);
+        root = root->sibling;
+    }
+}
+
+/**
+ * @brief print_binomial_heap
+ * This procedure prints all the nodes in a binomial heap.
+ * @param h the binomial heap.
+ */
+void print_binomial_heap(struct heap* h) {
+    struct node *curr = h->head;
+    while (curr != nullptr) {
+        level_order(curr);
+        cout<<"\n";
+        curr = curr->sibling;
+    }
+}
+
+/**
+ * @brief binomial_heap_minimum
+ * The following procedure finds the minimum node in a Binomial Heap and return a pointer to the node.
+ * @param h the binomial Heap
+ * @return a pointer to the minimum node in the heap.
+ */
 struct node* binomial_heap_minimum(struct heap* h) {
-    struct node* y = nullptr;
+    struct node *y = nullptr;
     struct node *x = h->head;
     int minimum = numeric_limits<int>::max();
     while (x != nullptr) {
@@ -61,8 +83,12 @@ struct node* binomial_heap_minimum(struct heap* h) {
 }
 
 /**
- * Link two binomial trees with the same degree. node z's key is smaller than node y's key.
-*/
+ * @brief binomial_link
+ * The following procedure links two binomial heaps with the same degree.
+ * Note node z's key is smaller than node y's key.
+ * @param y the root of the first binomial heap.
+ * @param z the root of the second binomial heap.
+ */
 void binomial_link(struct node* &y, struct node* &z) {
     y->parent = z;          // make z y's parent.
     y->sibling = z->child;  // make z's children to be y's siblings.
@@ -70,13 +96,75 @@ void binomial_link(struct node* &y, struct node* &z) {
     z->degree = z->degree + 1;  // increment z's degree (number of children) by 1.
 }
 
-/** Merge two binomial heaps and return their new head. */
+/**
+ * @brief binomial_heap_merge
+ * The following procedure merges two binomial heaps and returns a pointer to the head of the new
+ * binomial heap.
+ * @param h1 binomial heap1
+ * @param h2 binomial heap2
+ * @return the head of the new binomial heap.
+ */
 struct node *binomial_heap_merge(struct heap* h1, struct heap* h2) {
+    struct heap *h = make_binomial_heap();
+    struct node *curr1 = nullptr;   // Pointer to traverse heap1.
+    struct node *curr2 = nullptr;   // Pointer to traverse heap2.
+    if (h1->head == nullptr) {  // heap1 is empty, set new head to heap2.
+        h->head = h2->head;
+        return h->head;
+    }
+    else if (h2->head == nullptr) { // heap2 is empty, set new head to heap1.
+        h->head = h1->head;
+        return h->head;
+    }
 
+    // At this point, both h1 and h2 are non-empty.
+    if (h2->head->key < h1->head->key) {    // heap2 root is smaller than heap1 root.
+        h->head = h2->head;
+        curr2 = h2->head->sibling;
+        curr1 = h1->head;
+    }
+    else {
+        h->head = h1->head;
+        curr1 = h1->head->sibling;
+        curr2 = h2->head;
+    }
+    struct node *curr = h->head;
+    while (curr1 != nullptr && curr2 != nullptr) {  // do this while none of the pointers is null.
+        if (curr1->key > curr2->key) {  // curr2 element is added to new heap.
+            curr->sibling = curr2;
+            curr = curr->sibling;
+            curr2 = curr2->sibling;
+        }
+        else {                          // curr1 element is added to new heap.
+            curr->sibling = curr1;
+            curr = curr->sibling;
+            curr1 = curr1->sibling;
+        }
+    }
+    // In case of different number of trees.
+    struct node *tail = nullptr;
+    if (curr1 == nullptr)
+        tail = curr2;
+    else {
+        tail = curr1;
+    }
+    while (tail != nullptr) {   // add remaining nodes to new heap.
+        curr->sibling = tail;
+        curr = curr->sibling;
+        tail = tail->sibling;
+    }
+    return h->head;             // return new binomial heap head.
 }
 
-/** Merge two binomial heaps and returns a single one destroying the two heaps in the process. */
-struct heap *binomial_heap_union(struct heap* h1, struct heap* h2) {
+/**
+ * @brief binomial_heap_union
+ * The following procedure unites two binomial heaps and returns a pointer to a single binomial heap
+ * destroying the two heaps in the process.
+ * @param h1 binomial heap1
+ * @param h2 binomial heap2
+ * @return new binomial heap with combined contents of h1 & h2.
+ */
+struct heap *binomial_heap_union(struct heap* &h1, struct heap* &h2) {
     struct heap *h = make_binomial_heap();  // new binomial heap to hold the union.
     h->head = binomial_heap_merge(h1, h2);
     if (h->head == nullptr)
@@ -112,7 +200,12 @@ struct heap *binomial_heap_union(struct heap* h1, struct heap* h2) {
     return h;
 }
 
-/** Insert a node into a binomial heap H. */
+/**
+ * @brief binomial_heap_insert
+ * The following procedure inserts a node into a binomial heap H.
+ * @param h the Binomial Heap.
+ * @param x the node to be inserted.
+ */
 void binomial_heap_insert(struct heap* &h, struct node* x) {
     struct heap *hp = make_binomial_heap();
     x->parent = nullptr;
@@ -123,36 +216,77 @@ void binomial_heap_insert(struct heap* &h, struct node* x) {
     h = binomial_heap_union(h, hp); // unite n-node binomial heap and 1-node binomial heap.
 }
 
+/**
+ * @brief binomial_heap_extract_min
+ * The following procedure extracts the node with the minimum key from binomialheap H
+ * and returns a pointer to the extracted node.
+ * @param h the Binomial heap
+ * @return the node with minimum key.
+ */
+struct node *binomial_heap_extract_min(struct heap* &h) {
+    // Find root x with minimum key in root list of h.
+    int minimum = numeric_limits<int>::max();
+    struct node *curr = h->head;
+    struct node *x = nullptr;
+    while (curr != nullptr) {
+        if (curr->key < minimum) {
+            minimum = curr->key;
+            x = curr;
+        }
+        curr = curr->sibling;
+    }
+    // Remove x from root list of H.
+
+    struct heap *hp = make_binomial_heap();
+
+
+    h = binomial_heap_union(h, hp);
+    return x;
+}
+
+/**
+ * @brief binomial_heap_decrease_key
+ * The following procedure decreases the key of a node x in a binomial heap H to a new value k.
+ * It signals an error ifkis greater thanx’s current key
+ * @param h the Binomial Heap
+ * @param x the node whose key is to be decreased.
+ * @param k the new key for node x.
+ */
+void binomial_heap_decrease_key(struct heap* &h, struct node* x, int k) {
+
+}
+
+/**
+ * @brief binomial_heap_delete
+ * The following procedure deletes a node from a binomial Heap and modifies the heap in question.
+ * @param h the binomial heap
+ * @param x the node to be deleted.
+ */
+void binomial_heap_delete(struct heap* &h, struct node* x) {
+    binomial_heap_decrease_key(h, x, numeric_limits<int>::min());   // set node x's key to -ve infinity.
+    binomial_heap_extract_min(h);   // remove smallest node from Heap.
+}
+
 // Main function.
 int main()
 {
-    cout << "Hello World!" << endl;
+    cout << "Binomial Heap program!" << endl;
+    struct heap *h = make_binomial_heap();
+    binomial_heap_insert(h, Node(12));
+    binomial_heap_insert(h, Node(7));
+    binomial_heap_insert(h, Node(25));
+    binomial_heap_insert(h, Node(15));
+    binomial_heap_insert(h, Node(28));
+    binomial_heap_insert(h, Node(33));
+    binomial_heap_insert(h, Node(41));
+
+    cout<<"Minimum node in binomial heap is: "<<binomial_heap_minimum(h)->key<<endl;
+    print_binomial_heap(h);
+
+    cout<<"deleting smallest node....."<<endl;
+    binomial_heap_delete(h, binomial_heap_minimum(h));
+    cout<<"Binomial heap after deleting smallest node: "<<endl;
+    print_binomial_heap(h);
+
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
