@@ -1,5 +1,6 @@
 #include <iostream>
 #include <limits>
+#include <vector>
 
 using namespace std;
 
@@ -56,7 +57,7 @@ void in_order(struct node *root)
  * @param h the binomial heap.
  */
 void print_binomial_heap(struct heap* h) {
-    in_order(h->head);   // call lev
+    in_order(h->head);   // call inorder traversal print method.
 }
 
 /**
@@ -115,7 +116,8 @@ struct node *binomial_heap_merge(struct heap* h1, struct heap* h2) {
     }
 
     // At this point, both h1 and h2 are non-empty.
-    if (h2->head->key < h1->head->key) {    // heap2 root is smaller than heap1 root.
+    // Sort according to degrees. lowest to largest degrees.
+    if (h2->head->degree < h1->head->degree) {    // heap2 root's degree is smaller than heap1 root.
         h->head = h2->head;
         curr2 = h2->head->sibling;
         curr1 = h1->head;
@@ -127,7 +129,7 @@ struct node *binomial_heap_merge(struct heap* h1, struct heap* h2) {
     }
     struct node *curr = h->head;
     while (curr1 != nullptr && curr2 != nullptr) {  // do this while none of the pointers is null.
-        if (curr1->key > curr2->key) {  // curr2 element is added to new heap.
+        if (curr1->degree > curr2->degree) {  // curr2 element is added to new heap.
             curr->sibling = curr2;
             curr = curr->sibling;
             curr2 = curr2->sibling;
@@ -225,21 +227,27 @@ struct node *binomial_heap_extract_min(struct heap* &h) {
     struct node *curr = h->head;
     struct node *x = binomial_heap_minimum(h);
     // Remove x from root list of h.
-    curr = h->head;
-    struct node *prev = nullptr;
-    while (curr != nullptr) {
-        if (curr->sibling == x) {   // find x's previous node.
-            prev = curr;
-        }
-        curr = curr->sibling;
+    if (x == h->head) { // x is first node in binomial heap.
+        h->head = h->head->sibling;
     }
-    prev->sibling = x->sibling;
+    else {
+        curr = h->head;
+        struct node *prev = nullptr;
+        while (curr != nullptr) {
+            if (curr->sibling == x) {   // find x's previous node.
+                prev = curr;
+            }
+            curr = curr->sibling;
+        }
+        prev->sibling = x->sibling;
+    }
 
     struct heap *hp = make_binomial_heap();
     // Reverse list of x's children.
     struct node *child = x->child;
     struct node *pr = nullptr, *nxt = nullptr;
     while (child != nullptr) {
+        child->parent = nullptr;
         nxt = child->sibling;   // store next
         child->sibling = pr;    // reverse current node's pointer.
         // Move pointers one position ahead.
@@ -260,8 +268,48 @@ struct node *binomial_heap_extract_min(struct heap* &h) {
  * @param x the node whose key is to be decreased.
  * @param k the new key for node x.
  */
-void binomial_heap_decrease_key(struct heap* &h, struct node* x, int k) {
+void binomial_heap_decrease_key(struct heap* &h, struct node* &x, int k) {
+    if (k > x->key) {
+        cout<<"error: new key is greater than current key."<<endl;
+        return;
+    }
+    x->key = k;
+    struct node *y = x;
+    struct node *z = y->parent;
+    while (z != nullptr && y->key < z->key) {
+        swap(y->key, z->key); // if y and z have satellite fields, exchange them too.
+        y = z;
+        z = y->parent;
+    }
+}
 
+/**
+ * @brief tree_search
+ * Function that searches for a node in BST. Assumes that all keys are UNIQUE and POSITIVE.
+ * @param root the root of the tree.
+ * @param key the key to be searched for.
+ * @return the node with the key, null if not found.
+ */
+void tree_search(vector<struct node*> &v, struct node* root, int key) {
+    while (root != nullptr) {
+        if (root->key == key)
+            v.push_back(root);
+        tree_search(v, root->child, key);
+        root = root->sibling;
+    }
+}
+
+/**
+ * @brief binomial_heap_find
+ * This procedure searches binomial heap and returns the address to that node.
+ * @param h the fibonacci heap.
+ * @param k the key of the node.
+ * @return the node with key k.
+ */
+struct node *binomial_heap_find(struct heap* h, int k) {
+    vector<struct node*> v;
+    tree_search(v, h->head, k);
+    return v.empty() ? nullptr : v[0];
 }
 
 /**
@@ -271,6 +319,9 @@ void binomial_heap_decrease_key(struct heap* &h, struct node* x, int k) {
  * @param x the node to be deleted.
  */
 void binomial_heap_delete(struct heap* &h, struct node* x) {
+    // find pointer to node x.
+    x = binomial_heap_find(h, x->key);
+    if (x == nullptr) return;
     binomial_heap_decrease_key(h, x, numeric_limits<int>::min());   // set node x's key to -ve infinity.
     binomial_heap_extract_min(h);   // remove smallest node from Heap.
 }
@@ -291,9 +342,22 @@ int main()
     cout<<"Minimum node in binomial heap is: "<<binomial_heap_minimum(h)->key<<endl;
     print_binomial_heap(h);
 
-    cout<<"deleting smallest node....."<<endl;
+    cout<<"\nExtracting minimum node.... ";
+    cout<<binomial_heap_extract_min(h)->key<<endl;
+    print_binomial_heap(h);
+
+    cout<<"\ndeleting smallest node..... "<<binomial_heap_minimum(h)->key<<endl;
     binomial_heap_delete(h, binomial_heap_minimum(h));
-    cout<<"Binomial heap after deleting smallest node: "<<endl;
+    cout<<"Binomial heap after deleting node: "<<endl;
+    print_binomial_heap(h);
+
+    cout<<"\ndeleting node 33"<<endl;
+    binomial_heap_delete(h, Node(33));
+    cout<<"Binomial heap after deleting node 33: "<<endl;
+    print_binomial_heap(h);
+
+    cout<<"\nInserting node 1..."<<endl;
+    binomial_heap_insert(h, Node(1));
     print_binomial_heap(h);
 
     return 0;
