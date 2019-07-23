@@ -1,6 +1,7 @@
 #include <iostream>
 #include <limits>
 #include <vector>
+#include <stdlib.h>     /* srand, rand */
 
 using namespace std;
 
@@ -301,14 +302,15 @@ void tree_search(vector<struct node*> &v, struct node* root, int key) {
 
 /**
  * @brief binomial_heap_find
- * This procedure searches binomial heap and returns the address to that node.
+ * This procedure searches binomial heap for a node with a specific key
+ * and returns the address to that node.
  * @param h the fibonacci heap.
- * @param k the key of the node.
- * @return the node with key k.
+ * @param k the node to search for.
+ * @return the node found.
  */
-struct node *binomial_heap_find(struct heap* h, int k) {
+struct node *binomial_heap_find(struct heap* h, struct node *x) {
     vector<struct node*> v;
-    tree_search(v, h->head, k);
+    tree_search(v, h->head, x->key);
     return v.empty() ? nullptr : v[0];
 }
 
@@ -320,7 +322,7 @@ struct node *binomial_heap_find(struct heap* h, int k) {
  */
 void binomial_heap_delete(struct heap* &h, struct node* x) {
     // find pointer to node x.
-    x = binomial_heap_find(h, x->key);
+    x = binomial_heap_find(h, x);
     if (x == nullptr) return;
     binomial_heap_decrease_key(h, x, numeric_limits<int>::min());   // set node x's key to -ve infinity.
     binomial_heap_extract_min(h);   // remove smallest node from Heap.
@@ -359,6 +361,17 @@ int main()
     cout<<"\nInserting node 1..."<<endl;
     binomial_heap_insert(h, Node(1));
     print_binomial_heap(h);
+
+
+    /** RANDOM NUMBERS TO BE INSERTED INTO THE BINOMIAL HEAP. */
+    struct heap *h2 = make_binomial_heap();
+    // Add 20 nodes to the tree.
+    for (int i = 0; i < 20; i++) {
+        binomial_heap_insert(h2, Node(rand() % 100));
+    }
+    cout<<"\n\nTree after adding 20 random nodes:"<<endl;
+    print_binomial_heap(h2);
+
 
     return 0;
 }
