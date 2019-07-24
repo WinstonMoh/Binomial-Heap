@@ -2,6 +2,7 @@
 #include <limits>
 #include <vector>
 #include <stdlib.h>     /* srand, rand */
+#include <time.h>       /* time */
 
 using namespace std;
 
@@ -148,11 +149,12 @@ struct node *binomial_heap_merge(struct heap* h1, struct heap* h2) {
     else {
         tail = curr1;
     }
-    while (tail != nullptr) {   // add remaining nodes to new heap.
+    /**while (tail != nullptr) {   // add remaining nodes to new heap.
         curr->sibling = tail;
         curr = curr->sibling;
         tail = tail->sibling;
-    }
+    }*/
+    curr->sibling = tail;
     return h->head;             // return new binomial heap head.
 }
 
@@ -365,6 +367,8 @@ int main()
 
     /** RANDOM NUMBERS TO BE INSERTED INTO THE BINOMIAL HEAP. */
     struct heap *h2 = make_binomial_heap();
+    /* initialize random seed: */
+    srand(time(nullptr));
     // Add 20 nodes to the tree.
     for (int i = 0; i < 20; i++) {
         binomial_heap_insert(h2, Node(rand() % 100));
